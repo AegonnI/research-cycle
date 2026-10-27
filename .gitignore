@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+dist/
+*.sqlite
+*.sqlite-*
+*.db
+*.npz
+*.npy
+*.pt
+*.pth
+.env
+.env.*
+results*/
+data/
+logs/
