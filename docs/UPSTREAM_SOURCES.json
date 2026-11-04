@@ -1,0 +1,85 @@
+[
+  {
+    "repo": "K-Dense-AI/scientific-agent-skills",
+    "commit": "5f2bc0341354fd5590aef76a533ada1e1e5b4e62",
+    "path": "LICENSE.md",
+    "sha256": "09b02a3c9df3053c55531d503357a9c7cde275970e6c3ceaa1ddf5f0e90b40c1",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills/blob/5f2bc0341354fd5590aef76a533ada1e1e5b4e62/LICENSE.md"
+  },
+  {
+    "repo": "K-Dense-AI/scientific-agent-skills",
+    "commit": "5f2bc0341354fd5590aef76a533ada1e1e5b4e62",
+    "path": "skills/hypothesis-generation/SKILL.md",
+    "sha256": "5bccec0437d96d61821ec2095e7e32b61e8634cd8c02f11f42da953121e92719",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills/blob/5f2bc0341354fd5590aef76a533ada1e1e5b4e62/skills/hypothesis-generation/SKILL.md"
+  },
+  {
+    "repo": "K-Dense-AI/scientific-agent-skills",
+    "commit": "5f2bc0341354fd5590aef76a533ada1e1e5b4e62",
+    "path": "skills/scientific-critical-thinking/SKILL.md",
+    "sha256": "563af70571b7dcd6a96bf2e303bedfdcba623b4e9f082d58f04aacbc961fdae4",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills/blob/5f2bc0341354fd5590aef76a533ada1e1e5b4e62/skills/scientific-critical-thinking/SKILL.md"
+  },
+  {
+    "repo": "K-Dense-AI/scientific-agent-skills",
+    "commit": "5f2bc0341354fd5590aef76a533ada1e1e5b4e62",
+    "path": "skills/scientific-brainstorming/SKILL.md",
+    "sha256": "06f73b71556356a7f488c369b9445d7943543a3f14d159b2168fd3f621d6f8a9",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills/blob/5f2bc0341354fd5590aef76a533ada1e1e5b4e62/skills/scientific-brainstorming/SKILL.md"
+  },
+  {
+    "repo": "obra/superpowers",
+    "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+    "path": "LICENSE",
+    "sha256": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+    "url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/LICENSE"
+  },
+  {
+    "repo": "obra/superpowers",
+    "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+    "path": "skills/verification-before-completion/SKILL.md",
+    "sha256": "2befe7fc55bcadaa3d97dd9e8efeb633d2561c0ebe74c5a8b17c4d9e7e4520b3",
+    "url": "https://github.com/obra/superpowers/blob/2ce8aa15d05bd57213e6f746f953aafb7ded7a8b/skills/verification-before-completion/SKILL.md"
+  },
+  {
+    "repo": "karpathy/autoresearch",
+    "commit": "228791fb499afffb54b46200aca536f79142f117",
+    "path": "LICENSE",
+    "missing": true
+  },
+  {
+    "repo": "karpathy/autoresearch",
+    "commit": "228791fb499afffb54b46200aca536f79142f117",
+    "path": "program.md",
+    "sha256": "86cf987a5c381e46eefe0d0a82765223fd766d8d7acdc2afacfbbce15ecacece",
+    "url": "https://github.com/karpathy/autoresearch/blob/228791fb499afffb54b46200aca536f79142f117/program.md"
+  },
+  {
+    "repo": "NousResearch/hermes-agent",
+    "commit": "30ee54ee013da43a907661567b48f1481c45fd5f",
+    "path": "LICENSE",
+    "sha256": "821556e6336796450ab852d375117b48a4887e71d255794fd6318d99982a5ab6",
+    "url": "https://github.com/NousResearch/hermes-agent/blob/30ee54ee013da43a907661567b48f1481c45fd5f/LICENSE"
+  },
+  {
+    "repo": "NousResearch/hermes-agent",
+    "commit": "30ee54ee013da43a907661567b48f1481c45fd5f",
+    "path": "website/docs/user-guide/features/goals.md",
+    "sha256": "5565a11c5bd758d500c0df90005c01ab7d7e91992e1b52b90a1e18b7a4c8d0d2",
+    "url": "https://github.com/NousResearch/hermes-agent/blob/30ee54ee013da43a907661567b48f1481c45fd5f/website/docs/user-guide/features/goals.md"
+  },
+  {
+    "repo": "NousResearch/hermes-agent",
+    "commit": "30ee54ee013da43a907661567b48f1481c45fd5f",
+    "path": "website/docs/user-guide/features/skills.md",
+    "sha256": "75caa3fd71adbcc6ede4437ad61dae14e0185c4629ee107620b09a4f654c37e4",
+    "url": "https://github.com/NousResearch/hermes-agent/blob/30ee54ee013da43a907661567b48f1481c45fd5f/website/docs/user-guide/features/skills.md"
+  },
+  {
+    "repo": "NousResearch/hermes-agent",
+    "commit": "30ee54ee013da43a907661567b48f1481c45fd5f",
+    "path": "website/docs/user-guide/features/memory.md",
+    "sha256": "979cb02df938e3bcb003195e465487aa0cdf5a3e8690ac86eb1ccd96cd69fdd4",
+    "url": "https://github.com/NousResearch/hermes-agent/blob/30ee54ee013da43a907661567b48f1481c45fd5f/website/docs/user-guide/features/memory.md"
+  }
+]

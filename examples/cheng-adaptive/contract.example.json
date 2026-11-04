@@ -1,0 +1,150 @@
+{
+  "version": "cheng-adaptive-001",
+  "question": "Compare 2D CNN architectures on the Jun Cheng dataset under a bounded search budget.",
+  "goal_mode": "reach_target",
+  "metric": {
+    "key": "validation_macro_f1",
+    "direction": "maximize",
+    "nonnegative": true,
+    "target": 0.92
+  },
+  "evaluation": {
+    "classes": [
+      0,
+      1,
+      2
+    ],
+    "metric_unit": "slice",
+    "split_unit": "patient",
+    "source_split_sha256": "fe3c132cc9bd7c8ce589f6c84117124894761431fcbd4cfce7553f182e1b4177",
+    "tie_break": "lower measured inference latency, then fewer parameters",
+    "test_policy": "Organizer only, after frozen selection. No test data in agent inputs.",
+    "confirmation_repeats": 3,
+    "confirmation_epochs": "agent selects before confirmation",
+    "confirmation_seeds": "fresh controller-generated seeds for each frozen recipe; never used in search",
+    "final_ranking": "mean validation macro-F1 over all 3 completed seeds of a frozen confirmation recipe",
+    "confirmation_policy": "one confirmation group per scientific recipe; failed members can be retried with larger timeout; failed target can return to search"
+  },
+  "max_wall_seconds": 28800,
+  "report_reserve_seconds": 0,
+  "method_scope": {
+    "required_fields": [
+      "family",
+      "architecture",
+      "seed",
+      "fidelity",
+      "code_sha256",
+      "split_sha256",
+      "data_sha256"
+    ],
+    "allowed_values": {
+      "family": [
+        "residual_cnn",
+        "dense_cnn",
+        "efficient_cnn",
+        "mobile_cnn",
+        "convnext_cnn",
+        "shuffle_cnn",
+        "regnet_cnn",
+        "custom_cnn"
+      ],
+      "pretrained": [
+        false
+      ],
+      "image_size": [
+        160
+      ],
+      "optimizer": [
+        "AdamW",
+        "SGD"
+      ]
+    },
+    "numeric_bounds": {
+      "parameters": {
+        "min": 1000,
+        "max": 30000000
+      },
+      "lr": {
+        "min": 1e-05,
+        "max": 0.1
+      },
+      "weight_decay": {
+        "min": 0,
+        "max": 0.1
+      },
+      "batch_size": {
+        "min": 8,
+        "max": 128
+      }
+    }
+  },
+  "custom_cnn_scope": {
+    "blocks": [
+      2,
+      6
+    ],
+    "channels": [
+      16,
+      256
+    ],
+    "kernels": [
+      3,
+      5,
+      7
+    ],
+    "residual_connections": [
+      true,
+      false
+    ],
+    "normalization": [
+      "batch",
+      "group"
+    ],
+    "dropout": [
+      0,
+      0.3
+    ],
+    "projection_kernel_exception": "1x1 allowed only for residual dimension projection; selected main kernels are 3/5/7."
+  },
+  "allowed_search": [
+    "random",
+    "grid",
+    "successive_halving",
+    "bayesian_if_already_installed",
+    "evolutionary"
+  ],
+  "fixed_recipe": {
+    "input": "2D grayscale, replicate to RGB",
+    "image_size": 160,
+    "normalize": "(pixel-0.5)/0.5, source pixels in [0,1]",
+    "augmentation": "train only: horizontal flip p=0.5, rotation uniform [-10,10] degrees; validation deterministic",
+    "loss": "unweighted cross entropy",
+    "ema": false,
+    "ensemble": false,
+    "confirmation_checkpoint": "best validation macro-F1, ties earliest epoch",
+    "confirmation_early_stopping": false,
+    "precision": "AMP float16",
+    "augmentation_order": "Per image, augmentation before normalization",
+    "data_loader_workers": 0,
+    "validation_batch_size": 32
+  },
+  "prohibited": [
+    "3D",
+    "transformers",
+    "ensembles",
+    "external datasets",
+    "pretrained weights",
+    "test access",
+    "editing common inputs or manifest",
+    "installing or upgrading libraries",
+    "reading previous studies",
+    "reading other agent sessions or persistent memory",
+    "editing trainer or controller",
+    "direct SQL",
+    "direct shell training",
+    "resetting or deleting attempts"
+  ],
+  "runtime_python": "REPLACE_WITH_ABSOLUTE_EXISTING_PYTHON",
+  "notes": "Public reference configuration. Prepared-input format required. No dataset, weights or private environment is bundled.",
+  "execution_mode": "adaptive_executor"
+}

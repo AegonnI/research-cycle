@@ -49,6 +49,51 @@ def digest(value):
     return hashlib.sha256(packed(value).encode('utf-8')).hexdigest()
 
 
+def file_hash(path):
+    sha = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b''):
+            sha.update(block)
+    return sha.hexdigest()
+
+
+OPERATIONAL_KEYS = {'run_id', 'output_dir', 'output_path', 'log_path', 'started_at'}
+
+
+def scientific_config(config):
+    """Explicit science/execution separation; retain scientific code/data/fidelity."""
+    if 'science' in config:
+        if set(config) - {'science', 'execution'}:
+            raise ValueError('Put scientific fields inside science and operational fields inside execution')
+        result = config['science']
+    else:  # v1 compatibility: ignore only the documented top-level operational keys.
+        result = {k: v for k, v in config.items() if k not in OPERATIONAL_KEYS}
+    if not isinstance(result, dict) or not result:
+        raise ValueError('Scientific configuration must be a nonempty object')
+    return result
+
+
+def validate_scope(config, scope):
+    """Check declared fields. Actual code behavior still needs external inspection."""
+    if not scope:
+        return
+    for field in scope.get('required_fields', []):
+        if field not in config:
+            raise ValueError('Scope requires scientific field: ' + field)
+    for field, values in scope.get('allowed_values', {}).items():
+        if field not in config or config[field] not in values:
+            raise ValueError('Outside allowed method scope: ' + field)
+    for field, values in scope.get('forbidden_values', {}).items():
+        if field in config and config[field] in values:
+            raise ValueError('Forbidden method: ' + field)
+    for field, bounds in scope.get('numeric_bounds', {}).items():
+        value = config.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError('Scope requires finite numeric field: ' + field)
+        if 'min' in bounds and value < bounds['min'] or 'max' in bounds and value > bounds['max']:
+            raise ValueError('Outside numeric method scope: ' + field)
+
+
 SCHEMA = '''
 CREATE TABLE study(id INTEGER PRIMARY KEY CHECK(id=1), contract TEXT NOT NULL,
  contract_hash TEXT NOT NULL, created TEXT NOT NULL, status TEXT NOT NULL,
@@ -122,11 +167,7 @@ def evidence_files(db_path, paths):
         relative = path.relative_to(root)  # Reject escape, including symlinks.
         if not path.is_file():
             raise ValueError('Evidence file missing: ' + str(relative))
-        sha = hashlib.sha256()
-        with path.open('rb') as stream:
-            for block in iter(lambda: stream.read(1024 * 1024), b''):
-                sha.update(block)
-        output.append({'path': relative.as_posix(), 'sha256': sha.hexdigest(),
+        output.append({'path': relative.as_posix(), 'sha256': file_hash(path),
                        'bytes': path.stat().st_size})
     if not output:
         raise ValueError('At least one evidence file required')
@@ -178,7 +219,7 @@ def perform(args):
         return initialize(args.db, read_json(args.contract))
     db = connect(args.db)
     try:
-        db.execute('BEGIN IMMEDIATE')
+        db.execute('BEGIN' if args.command in ('snapshot', 'show', 'audit') else 'BEGIN IMMEDIATE')
         result = execute(db, args)
         db.commit()
         return result
@@ -194,12 +235,17 @@ def execute(db, a):
         row, contract = state(db)
         attempts, used = usage(db)
         metric = contract['metric']
-        completed = []
-        for r in db.execute("SELECT id,metrics,config FROM experiments WHERE status='completed'"):
-            values = json.loads(r['metrics'])
-            completed.append({'id': r['id'], 'score': values[metric['key']],
-                              'config': json.loads(r['config'])})
-        completed.sort(key=lambda r: r['score'], reverse=metric['direction'] == 'maximize')
+        # SQLite selects only the requested leaders; do not load every config into context.
+        direction = 'DESC' if metric['direction'] == 'maximize' else 'ASC'
+        key = '$.' + json.dumps(metric['key'])
+        stage = getattr(a, 'stage', None)
+        stage_sql = " AND COALESCE(json_extract(config,'$.science.fidelity.stage'),json_extract(config,'$.fidelity.stage'))=?" if stage else ''
+        parameters = (key, stage) if stage else (key,)
+        completed = [{'id': r['id'], 'score': r['score'], 'config': json.loads(r['config'])}
+                     for r in db.execute("SELECT id,config,json_extract(metrics,?) AS score "
+                                         "FROM experiments WHERE status='completed'" + stage_sql +
+                                         " ORDER BY score " + direction + ',id LIMIT 5', parameters)]
+        checkpoint = db.execute("SELECT payload FROM events WHERE kind='checkpoint' ORDER BY id DESC LIMIT 1").fetchone()
         hypotheses = [dict(r) for r in db.execute('SELECT * FROM hypotheses ORDER BY id DESC LIMIT 20')]
         return {'status': row['status'], 'contract': contract, 'contract_hash': row['contract_hash'],
                 'frozen': row['frozen'] is not None, 'attempts': attempts,
@@ -208,9 +254,39 @@ def execute(db, a):
                 'open_attempts': [dict(r) for r in db.execute("SELECT id,created,reserve_seconds FROM experiments WHERE status='running'")],
                 'hypotheses': hypotheses,
                 'hypothesis_count': db.execute('SELECT COUNT(*) FROM hypotheses').fetchone()[0],
-                'best': completed[:5],
+                'best': completed, 'ranking_warning': 'Mixed fidelities are not directly comparable; filter before scientific selection.',
+                'checkpoint': json.loads(checkpoint[0]) if checkpoint else None,
                 'findings': [dict(r) for r in db.execute('SELECT * FROM findings ORDER BY id DESC LIMIT 10')],
                 'finding_count': db.execute('SELECT COUNT(*) FROM findings').fetchone()[0]}
+    if a.command == 'audit':
+        row, contract = state(db)
+        issues = []
+        root = Path(a.db).resolve().parent
+        for r in db.execute('SELECT id,evidence FROM experiments WHERE evidence IS NOT NULL'):
+            for item in json.loads(r['evidence']):
+                path = (root / item['path']).resolve()
+                try:
+                    path.relative_to(root)
+                    if not path.is_file() or file_hash(path) != item['sha256']:
+                        issues.append({'experiment': r['id'], 'path': item['path'], 'issue': 'missing or modified'})
+                except ValueError:
+                    issues.append({'experiment': r['id'], 'issue': 'path escape'})
+        if row['frozen']:
+            for item in json.loads(row['frozen'])['evidence']:
+                path = (root / item['path']).resolve()
+                try:
+                    path.relative_to(root)
+                    if not path.is_file() or file_hash(path) != item['sha256']:
+                        issues.append({'frozen': item['path'], 'issue': 'missing or modified'})
+                except ValueError:
+                    issues.append({'frozen': item['path'], 'issue': 'path escape'})
+        if digest(contract) != row['contract_hash']:
+            issues.append({'issue': 'contract hash mismatch'})
+        if db.execute("SELECT id FROM experiments WHERE status='running'").fetchone():
+            issues.append({'issue': 'open attempts'})
+        if issues:
+            raise ValueError('Audit failed: ' + packed(issues))
+        return {'audit': 'passed', 'status': row['status'], 'scientific_goal_verified': False}
     if a.command == 'show':
         # Table names are CLI enum values; no free SQL input is accepted.
         r = db.execute('SELECT * FROM ' + a.table + ' WHERE id=?', (a.id,)).fetchone()
@@ -218,6 +294,17 @@ def execute(db, a):
             raise ValueError('Record missing')
         return dict(r)
     row, contract = require_active(db, allow_frozen=a.command in ('finish', 'charge', 'close'))
+    if a.command == 'checkpoint':
+        note = read_json(a.note)
+        if not isinstance(note, dict) or not all(note.get(k) for k in ('next_action', 'reason', 'evidence_ids')):
+            raise ValueError('Checkpoint needs next_action, reason and evidence_ids')
+        for eid in note['evidence_ids']:
+            if not db.execute('SELECT id FROM experiments WHERE id=?', (eid,)).fetchone():
+                raise ValueError('Checkpoint cites missing experiment')
+        if len(packed(note)) > 12000:
+            raise ValueError('Checkpoint too large; reference files instead')
+        event(db, 'checkpoint', note)
+        return {'checkpoint': 'saved'}
     if a.command == 'hypothesis':
         cur = db.execute('INSERT INTO hypotheses(text,rationale,test,status,created) VALUES(?,?,?,?,?)',
                          (a.text, a.rationale, a.test, 'new', now()))
@@ -230,7 +317,9 @@ def execute(db, a):
         config = read_json(a.config)
         if not isinstance(config, dict) or not config:
             raise ValueError('Configuration must be a nonempty JSON object')
-        fingerprint = digest({'contract_hash': row['contract_hash'], 'config': config})
+        science = scientific_config(config)
+        validate_scope(science, contract.get('method_scope', {}))
+        fingerprint = digest({'contract_hash': row['contract_hash'], 'config': science})
         previous = list(db.execute('SELECT status FROM experiments WHERE fingerprint=?', (fingerprint,)))
         if previous and (not a.retry_reason or any(r['status'] != 'failed' for r in previous)):
             raise ValueError('Duplicate configuration; retry only failed attempts with explicit reason')
@@ -317,11 +406,15 @@ def execute(db, a):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     sub = p.add_subparsers(dest='command', required=True)
-    for name in ['init', 'hypothesis', 'begin', 'finish', 'finding', 'snapshot', 'show', 'freeze', 'charge', 'close']:
+    for name in ['init', 'hypothesis', 'begin', 'finish', 'finding', 'snapshot', 'show', 'freeze', 'charge', 'close', 'checkpoint', 'audit']:
         s = sub.add_parser(name)
         s.add_argument('--db', required=True)
         if name == 'init':
             s.add_argument('--contract', required=True)
+        elif name == 'checkpoint':
+            s.add_argument('--note', required=True)
+        elif name == 'snapshot':
+            s.add_argument('--stage', help='Filter score leaders by scientific fidelity.stage')
         elif name == 'hypothesis':
             for field in ['text', 'rationale', 'test']:
                 s.add_argument('--' + field, required=True)

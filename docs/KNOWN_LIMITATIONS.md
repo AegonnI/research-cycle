@@ -1,4 +1,38 @@
-# Known limitations of v1.0.0
+# Known limitations
+
+## v2.0.0-rc.2 adaptive release
+
+- One successful adaptive pilot and a historical control are published in
+  [the benchmark report](benchmarks/2026-11-cheng/REPORT.en.md). Different epochs,
+  trainers,goals,recipes and accounting prevent isolated skill-effect conclusions.
+- Test difference+0.822pp has a conditional patient-bootstrap interval including zero.
+  Test was already used in older organizer pilots; no external independent evaluation.
+- No established token/compute savings or memory-recovery benefit. Provider usage is unknown.
+- Adaptive MCP tools require an executor; a skill folder alone cannot provide them.
+- The reference executor is Linux/WSL/CUDA and prepared-input specific,with a fixed
+  model constructor space/trainer. It is not arbitrary-code NAS or an OS security boundary.
+- The standalone memory.py retains explicit attempt/compute-budget requirements.
+- Hard-crash recovery may require operator reconciliation of running records.
+- Technical closing may finish after the research deadline;late results cannot qualify.
+- A host's interactive window may remain open after Goal success until its watchdog closes it.
+- Agent mechanism/no-overfitting claims need additional experiments,not just a high score.
+- Executor files match the audited pilot;release instruction generalization and the
+  public setup wrapper were not evaluated in a new full agent study.
+
+## Historical v2.0.0-rc.1 candidate
+
+- Local candidate; research efficacy and memory/token savings remain untested.
+- Renaming execution metadata no longer bypasses duplicates. Complete scientific
+  declarations are still the caller's responsibility; no v1 database migration.
+- Scope/audit validate declarations and file integrity, not actual code behavior,
+  metric correctness, training provenance or scientific goal attainment.
+- No OS isolation, process termination or aggregate provider-token enforcement.
+- Broad validation search can overfit; seed repeats do not measure patient sampling uncertainty.
+- Free cloud quotas can change. Native Goal support depends on the installed host.
+- Bilingual equivalence is reviewed manually.
+
+## Archived v1.0.0 record
+
 
 This is a record of the released implementation, not a claim that every planned improvement has been implemented.
 

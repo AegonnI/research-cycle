@@ -134,6 +134,83 @@ class MemoryTests(unittest.TestCase):
             with self.assertRaises(sqlite3.IntegrityError):
                 db.execute('DELETE FROM events')
 
+    def test_renaming_execution_does_not_bypass_duplicate_detection(self):
+        first = self.write('first.json', {'science': {'seed': 1, 'lr': 0.001},
+                                         'execution': {'run_id': 'A', 'output_dir': 'a'}})
+        self.finish(self.begin(config=first))
+        renamed = self.write('renamed.json', {'science': {'lr': 0.001, 'seed': 1},
+                                             'execution': {'run_id': 'B', 'output_dir': 'b'}})
+        with self.assertRaisesRegex(ValueError, 'Duplicate'):
+            self.begin(config=renamed)
+        changed_seed = self.write('seed.json', {'science': {'lr': 0.001, 'seed': 2}})
+        self.begin(config=changed_seed)
+
+    def test_legacy_operational_fields_and_fidelity_are_handled_separately(self):
+        first = self.write('a.json', {'seed': 1, 'run_id': 'a', 'fidelity': {'stage': 'screen', 'epochs': 2}})
+        self.finish(self.begin(config=first))
+        renamed = self.write('b.json', {'seed': 1, 'run_id': 'b', 'fidelity': {'stage': 'screen', 'epochs': 2}})
+        with self.assertRaisesRegex(ValueError, 'Duplicate'):
+            self.begin(config=renamed)
+        longer = self.write('c.json', {'seed': 1, 'fidelity': {'stage': 'promote', 'epochs': 10}})
+        self.finish(self.begin(config=longer))
+        result = self.call('snapshot', stage='promote')
+        self.assertEqual(len(result['best']), 1)
+        self.assertEqual(result['best'][0]['config']['fidelity']['epochs'], 10)
+
+    def test_method_scope_rejects_forbidden_or_missing_declarations(self):
+        scope = {'required_fields': ['family'], 'allowed_values': {'pretrained': [False]},
+                 'forbidden_values': {'family': ['transformer']},
+                 'numeric_bounds': {'parameters': {'min': 10, 'max': 30}}}
+        good = {'family': 'cnn', 'pretrained': False, 'parameters': 20}
+        memory.validate_scope(good, scope)
+        for bad in [{**good, 'family': 'transformer'}, {**good, 'parameters': 31},
+                    {**good, 'pretrained': True}, {'pretrained': False, 'parameters': 20}]:
+            with self.assertRaises(ValueError):
+                memory.validate_scope(bad, scope)
+        other_db = self.root / 'scoped.sqlite'
+        memory.initialize(other_db, {**self.contract, 'method_scope': scope})
+        h = memory.perform(argparse.Namespace(command='hypothesis', db=str(other_db), text='H', rationale='R', test='T'))['id']
+        bad_path = self.write('forbidden.json', {'science': {**good, 'family': 'transformer'}})
+        with self.assertRaisesRegex(ValueError, 'Forbidden'):
+            memory.perform(argparse.Namespace(command='begin', db=str(other_db), hypothesis=h,
+                config=bad_path, reserve_seconds=10, retry_reason=None))
+        self.assertEqual(memory.perform(argparse.Namespace(command='snapshot', db=str(other_db)))['attempts'], 0)
+
+    def test_explicit_config_cannot_hide_scientific_fields_outside_science(self):
+        with self.assertRaises(ValueError):
+            memory.scientific_config({'science': {'seed': 1}, 'lr': 0.1})
+        with self.assertRaises(ValueError):
+            memory.scientific_config({'execution': {'run_id': 'A'}, 'science': {}})
+
+    def test_checkpoint_recovers_across_connections_and_references_real_trials(self):
+        eid = self.begin()
+        self.finish(eid)
+        note = self.write('next.json', {'next_action': 'Confirm', 'reason': 'Promising', 'evidence_ids': [eid]})
+        self.call('checkpoint', note=note)
+        self.assertEqual(self.call('snapshot')['checkpoint']['next_action'], 'Confirm')
+        bad = self.write('bad.json', {'next_action': 'Confirm', 'reason': 'Unknown', 'evidence_ids': [999]})
+        with self.assertRaises(ValueError):
+            self.call('checkpoint', note=bad)
+
+    def test_audit_detects_modified_trial_and_frozen_evidence(self):
+        self.finish(self.begin())
+        self.assertEqual(self.call('audit')['audit'], 'passed')
+        self.log.write_text('modified log')
+        with self.assertRaisesRegex(ValueError, 'Audit failed'):
+            self.call('audit')
+        self.log.write_text('actual log')
+        decision = self.write('decision.json', {'choice': 1})
+        self.call('freeze', decision=decision, evidence=[str(self.log)])
+        self.assertFalse(self.call('audit')['scientific_goal_verified'])
+        Path(decision).write_text('{}')
+        with self.assertRaisesRegex(ValueError, 'Audit failed'):
+            self.call('audit')
+
+    def test_audit_rejects_unresolved_process_reservations(self):
+        self.begin()
+        with self.assertRaisesRegex(ValueError, 'open attempts'):
+            self.call('audit')
+
 
 if __name__ == '__main__':
     unittest.main()

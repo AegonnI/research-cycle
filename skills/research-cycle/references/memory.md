@@ -1,40 +1,71 @@
-# SQLite-память
+# SQLite ledger — standard library only
 
-Использовать Python установленного окружения. Примеры ниже относительны корню исследования; `MEMORY` обозначает путь к поставляемому `scripts/memory.py`, а не отдельный пакет для установки.
+Use the existing Python. `MEMORY` means bundled `scripts/memory.py`. Evidence paths
+cannot escape the database directory. Keep bulk arrays/weights outside SQLite.
 
-```text
+```sh
 python MEMORY init --db research.sqlite --contract contract.json
-python MEMORY hypothesis --db research.sqlite --text "Проверяемое утверждение" --rationale "Основание" --test "Что подтвердит/опровергнет"
-python MEMORY begin --db research.sqlite --hypothesis 1 --config configs/run01.json --reserve-seconds 300
-python MEMORY finish --db research.sqlite --experiment 1 --outcome completed --seconds 215 --metrics results/run01.json --evidence logs/run01.txt predictions/run01.npz code/train.py
-python MEMORY finding --db research.sqlite --experiments 1 --text "Наблюдение и его границы" --hypothesis-status uncertain
-python MEMORY snapshot --db research.sqlite
-python MEMORY freeze --db research.sqlite --decision final_decision.json --evidence runs/best.pt code/evaluate.py
+python MEMORY hypothesis --db research.sqlite --text "Claim/search question" --rationale "Reason" --test "Discriminating evidence"
+python MEMORY begin --db research.sqlite --hypothesis 1 --config configs/trial.json --reserve-seconds 300
+python MEMORY finish --db research.sqlite --experiment 1 --outcome completed --seconds 215 --metrics runs/1/metrics.json --evidence runs/1/train.log runs/1/train.py
+python MEMORY finding --db research.sqlite --experiments 1 --text "Observation and limits" --hypothesis-status uncertain
+python MEMORY checkpoint --db research.sqlite --note next.json
+python MEMORY snapshot --db research.sqlite --stage confirm
+python MEMORY show --db research.sqlite --table experiments --id 1
+python MEMORY freeze --db research.sqlite --decision decision.json --evidence runs/1/model.pt evaluator.py
+python MEMORY charge --db research.sqlite --seconds 20 --evidence evaluation.json
+python MEMORY audit --db research.sqlite
 python MEMORY close --db research.sqlite --status budget_exhausted
 ```
 
-Контракт содержит произвольные дополнительные поля и обязательные:
+Required contract: `question`, `metric: {key, direction: maximize|minimize}`, positive
+integer `max_attempts`, positive `max_compute_seconds`. Optional
+`final_evaluation_reserve_seconds` protects final inference; reserve finalist training
+in the controller too. Other rules and method_scope remain in the contract.
+
+Recommended config:
 
 ```json
 {
-  "question": "Исследовательский вопрос",
-  "metric": {"key": "validation_macro_f1", "direction": "maximize", "target": 0.97},
-  "max_attempts": 12,
-  "max_compute_seconds": 14400,
-  "final_evaluation_reserve_seconds": 300
+  "science": {
+    "family": "residual_cnn", "architecture": "resnet18", "seed": 101,
+    "fidelity": {"stage": "screen", "epochs": 3},
+    "pretrained": false, "parameters": 11178051, "image_size": 160,
+    "optimizer": "AdamW", "lr": 0.001, "batch_size": 32,
+    "split_sha256": "REPLACE", "code_sha256": "REPLACE", "data_sha256": "REPLACE"
+  },
+  "execution": {"run_id": "screen-001", "output_dir": "runs/001"}
 }
 ```
 
-Добавить определения данных, split hash, диапазон метрики, требование повторений, критерии достижения, срок и токены при наличии. Скрипт не интерпретирует весь контракт и не выдаёт научный вердикт. Верхнеуровневое поле метрики в JSON результата должно совпадать с `metric.key`. `completed` означает завершение попытки, не подтверждение гипотезы.
+Put every scientific influence (including preprocessing, weight hashes and fidelity)
+inside science. Only science plus the contract hash enter the fingerprint. With this
+format no top-level fields except science/execution are allowed. Legacy flat configs
+ignore only top-level run_id, output_dir, output_path, log_path, started_at. Renaming
+stages/code solely to bypass duplicate detection is forbidden. An exact duplicate
+requires a failed predecessor and --retry-reason; successful/running duplicates fail.
+A fresh seed is a repeat, not a new architecture.
 
-`begin` возвращает ID попытки. Конфигурация — полный JSON, включая seed, preprocessing, веса, optimizer, расписание и hash кода. Форматированию JSON, порядку ключей и замене чисел 1 на 1.0 не придаётся значение; другие различия сохраняются. После ошибки для идентичной конфигурации: `--retry-reason "Причина"`. После успешного запуска точный дубль запрещён; независимый повтор имеет другое случайное зерно.
+Completed trials require a finite numeric metric.key. Failed scores may be absent,
+never invented zeroes. Evidence/metrics are hashed; use immutable per-trial trainer
+snapshots, not one changing file. Open reservations survive context loss. Reconcile
+processes before closing failed work. Overruns mark budget_violation, block new trials
+and allow only settling work then closing invalid/stopped. charge accounts other
+compute but does not enforce deadlines. Include validation/cleanup in process timeouts.
 
-Резерв времени учитывается целиком, пока попытка открыта, даже после перезапуска чата. Перед закрытием аварийной попытки проверить её реальный процесс и расход. `finish` не разрешает фактическое время больше резерва без отметки нарушения; данные сохраняются, исследование помечается `budget_violation`, новые запуски блокируются. Оставшиеся попытки можно закрыть с фактическими затратами, а исследование завершить только как invalid или stopped. Финальное оценивание учитывать командой `charge --seconds N --evidence path`; она не расходует попытку обучения и не имеет резервирования — запускать оценщик с внешним timeout по оставшемуся лимиту.
+snapshot returns budget/counts, open trials, latest checkpoint, 20 recent hypotheses,
+10 findings and five score leaders selected in SQL. Without --stage leaders may have
+different fidelities and are not a final ranking. --stage confirm filters
+science.fidelity.stage (legacy fidelity.stage too).
+Checkpoint JSON: {"next_action":"...","reason":"...","evidence_ids":[1]}; max 12,000
+characters. Save decisions and evidence references, not private reasoning.
 
-Метрики — JSON-объект с конечными числами; у завершённой попытки обязательна основная метрика. Включать в результат метрики только предназначенной для поиска части данных. Большие файлы в SQLite не вставляются.
+freeze hashes the decision/evidence before held-out evaluation and blocks training.
+audit checks trial/frozen files and fails on modifications, missing evidence or open
+trials. It does not check metric correctness or goal attainment. close achieved needs
+separate scientific verification, even after freeze. Other terminal states:
+budget_exhausted, inconclusive, stopped, invalid.
 
-`snapshot` возвращает ограниченную сводку: лучшие 5 завершённых попыток, до 10 последних выводов, до 20 гипотез, все незакрытые попытки, число остальных записей и оставшиеся ресурсы. Для адресного чтения: `show --table hypotheses|experiments|findings --id N`.
-
-`freeze` проверяет наличие доказательств, сохраняет их хеши и решение. После фиксации разрешены только закрытие незавершённых попыток, учёт итоговой оценки и завершение исследования; обучение через `begin` запрещено. После close запрещены изменения через интерфейс. События append-only, SQL-триггеры запрещают изменение и удаление событий. Администратор SQLite может обойти это: база не является защитой от намеренно действующего владельца файлов.
-
-`close --status achieved` требует freeze, но не доказывает достижение численного критерия. Перед этим агент/оценщик отдельно проверяет все критерии контракта. Варианты статуса: achieved, budget_exhausted, inconclusive, stopped, invalid. Ограничитель goal/token и время всей работы задаются в среде, а не этим скриптом.
+This is an audit aid, not a security boundary/watchdog: no process termination, provider
+token accounting, code inspection or test-label access prevention. Direct SQLite edits
+can bypass it. Use a new database for v2; archived v1 databases are not migrated.
