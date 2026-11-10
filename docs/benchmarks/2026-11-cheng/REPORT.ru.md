@@ -44,7 +44,7 @@ validation0.934492/0.928051/0.934110,среднее0.932217>=0.92. Все14по�
 рецепт зафиксирован до их генерации. Все3новых checkpoint воспроизвели validation;
 прежняя проверка также воспроизвела3checkpoint исторического победителя. При аудите
 нового обучения не было. Исполнитель опубликован в
-[примере](../../../examples/cheng-adaptive/README.md).
+[примере](https://github.com/AegonnI/research-cycle/blob/v2.0.0-rc.2/examples/cheng-adaptive/README.md).
 
 Метрики: [JSON](metrics.json), [CSV](seed_metrics.csv), [14попыток](adaptive_trials.json).
 Это не полное воспроизведение обучения без отдельных входов и окружения. Выпущенная

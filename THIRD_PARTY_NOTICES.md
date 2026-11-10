@@ -24,7 +24,7 @@ our own implementation of general research methods.
 
 Not imported: upstream skill dependencies, paid diagram tools, mandatory human/group
 facilitation, blanket approval gates, infinite loops, arbitrary workspace resets, or
-repeated full audits every turn. Our scope is autonomous bounded computational research.
+repeated full audits every turn. Our scope is research orchestration; computational execution is an optional task-specific route.
 
 Не перенесены: внешние зависимости и платные инструменты, обязательные обсуждения с
 людьми, бесконечные циклы и проверки всего проекта на каждом ходе. Русский текст —

@@ -1,6 +1,5 @@
 * text=auto eol=lf
 skills/research-cycle/** -text
 templates/** -text
-# Retain exact audited executor bytes and upstream license texts.
-examples/cheng-adaptive/executor/*.py -text
+# Retain upstream license texts.
 licenses/* -text

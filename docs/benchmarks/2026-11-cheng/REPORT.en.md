@@ -40,7 +40,7 @@ Independent checks:SQLite integrity,47hash-chained events,14submitted/started/fi
 98artifact hashes,20sealed files,14CSVmetrics/histories/fingerprints,fresh-seed locking
 and deadline. All3new checkpoints reproduced validation; an earlier organizer audit
 also reproduced3historical winner checkpoints. No new training occurred during audit.
-The nine [executor source files](../../../examples/cheng-adaptive/README.md) match
+The nine [executor source files](https://github.com/AegonnI/research-cycle/blob/v2.0.0-rc.2/examples/cheng-adaptive/README.md) match
 the pilot. Release guidance generalizes the evaluated preparation fork; no new full
 agent run evaluated this edited release text. This is not a full data/weights release.
 

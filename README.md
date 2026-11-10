@@ -1,57 +1,65 @@
 # Research Cycle
 
-[Русский](README.ru.md)
+[Русская инструкция](README.ru.md)
 
-Portable research skill: choose experiments, inspect results, revise the plan and
-verify conclusions. The user defines goals, methods and resources. A target metric
-and total wall deadline can be the only resource limits.
+A skill for organizing research: understand the question, examine context, choose a
+design, verify results and report conclusions. It covers literature reviews, data
+analysis, simulations and method comparisons. Your agent host supplies execution tools.
 
-**Experimental v2.0.0-rc.2.** The adaptive Cheng pilot reached mean validation
-macro-F1≥0.92 on three fresh training seeds in about2h29m.
+## Start here
 
-| Historical run | Winner | Mean validation F1 | Mean held-out test F1 |
-|---|---|---:|---:|
-| Without skill | DenseNet121 | 0.902062 | 0.878772 |
-| Adaptive with skill | DenseNet121 | **0.932217** | **0.886990** |
+1. Give your agent the [research-cycle folder](skills/research-cycle), including
+   `SKILL.md` and references, or connect it using the host's skill mechanism. With
+   text-only access, supply SKILL.md and the relevant reference text.
+2. Copy the [starter prompt](templates/RESEARCH_GOAL_TEMPLATE.en.md).
+3. In the same message describe your task in your own words. No placeholders to fill.
 
-The test difference is **+0.822 percentage points**. This is an observational comparison
-of different processes, not a controlled skill ablation. Epochs, recipes, stopping
-rules and accounting differ. The patient-bootstrap interval includes zero; neither
-a causal improvement nor compute/token savings is established.
-[Report](docs/benchmarks/2026-11-cheng/REPORT.en.md) ·
-[Metrics JSON](docs/benchmarks/2026-11-cheng/metrics.json) ·
-[Seed CSV](docs/benchmarks/2026-11-cheng/seed_metrics.csv).
+The agent creates the working task, briefly states its interpretation and starts.
+It asks only questions that block progress. A literature review needs no invented
+numeric target or model training.
 
-## Use
+For example:
 
-1. Download the [release](https://github.com/AegonnI/research-cycle/releases/tag/v2.0.0-rc.2)
-   or expose `skills/research-cycle/` to your agent.
-2. Define data/method boundaries, metric, confirmation and stopping objective.
-   Use the [adaptive prompt](templates/ADAPTIVE_GOAL_TEMPLATE.en.md) for target+wall
-   tasks, or the [full contract](templates/RESEARCH_TASK_TEMPLATE.en.md).
-3. Let the agent choose models, parameters, epochs and subsequent experiments.
-   Coverage quotas, attempt/compute caps and fixed reserves are optional user choices.
-4. For Hermes explicitly invoke native `/goal`, use a real external deadline and
-   verify results. Markdown cannot enable Goal or create execution tools.
+> I have hourly electricity consumption data in the project folder. Compare methods
+> for forecasting the next day. You have two hours; use only installed libraries.
+> Give me a report with an honest evaluation of forecast quality.
 
-SKILL.md is English; [guide.ru.md](skills/research-cycle/references/guide.ru.md) is the
-Russian counterpart. Adaptive execution is bilingual. Load the relevant route/language.
+Or:
 
-## Execution
+> Review methods for filling missing values in time series. Compare assumptions,
+> limitations and the strength of available evidence. No training is needed.
 
-- **Adaptive reference executor:** [Cheng example](examples/cheng-adaptive/README.md),
-  Linux/WSL and existing CUDA Python. Checks trials, allows longer-timeout retries,
-  freezes recipes before three fresh seeds and closes on target or wall deadline.
-  Executor source matches the audited pilot; a public setup wrapper is provided.
-- **Standalone SQLite helper:** standard-library `memory.py` for explicitly bounded
-  attempt/compute contracts. It records evidence but does not stop processes. For
-  wall-only tasks use the adaptive executor instead of inventing extra resource caps.
+## Useful details to mention
 
-The skill ZIP contains instructions/helpers/templates. The reference ZIP also contains
-executor code, tests and aggregate evidence. Both exclude images, weights, experiment
-databases, credentials and private manifests. See [limitations](docs/KNOWN_LIMITATIONS.md),
-[usage](docs/USAGE.md), [Hermes](skills/research-cycle/references/hermes.md),
-[attribution](THIRD_PARTY_NOTICES.md). [v1 history](docs/PILOT_ANALYSIS.ru.md) is preserved.
+These are hints, not required form fields:
+
+- What you want to learn and receive.
+- Available files, data or sources.
+- What would make the answer sufficient; a metric/target only if relevant.
+- Allowed methods and fixed conditions.
+- Desired deadline and other necessary resource limits.
+- Permitted workspace and available tools/libraries.
+- Report language, format and audience.
+
+An environment manifest is optional. The [structured task template](templates/RESEARCH_TASK_TEMPLATE.en.md)
+remains available and can be filled by the agent. SQLite, GPU, model quotas, fixed
+reserves and a particular host are not defaults. Native Goal, search and technical
+timeouts require actual host support; Markdown does not create them.
+
+## Documentation and contents
+
+- [Usage](docs/USAGE.md) and [capability limits](docs/KNOWN_LIMITATIONS.md).
+- [Technical specification, Russian](docs/TECHNICAL_SPECIFICATION.ru.md): dated
+  10 November 2026, reconstructed from the implemented MVP; approval status is explicit.
+- Skill and bilingual references in `skills/research-cycle/`.
+- Optional SQLite helper and model-search guidance for applicable tasks.
+- [Adaptation provenance and MIT notices](THIRD_PARTY_NOTICES.md).
+
+Benchmark executor code and superseded setup guides were removed from the current
+branch and retained locally. They remain available in the unchanged
+[v2.0.0-rc.2 release](https://github.com/AegonnI/research-cycle/releases/tag/v2.0.0-rc.2).
+Earlier releases and Git history are preserved. Current experimental version:
+**2.1.0-rc.1**, [download](https://github.com/AegonnI/research-cycle/releases/tag/v2.1.0-rc.1).
 
 ## Validate and build
 
@@ -60,5 +68,23 @@ python -m unittest discover -s tests -v
 python scripts/build_release.py
 ```
 
-Tests verify software behavior, not research efficacy. The skill requires no global
-package installation; training libraries belong to the task. MIT; independent project.
+Tests cover helper behavior and consistency of published metrics. General instructions
+do not establish reliable performance across every domain. No data, weights, private
+settings or credentials are bundled. MIT licensed.
+
+## Historical pilot results
+
+These numbers are unchanged. They evaluate the previous adaptive Cheng route, not
+the new free-form intake wording.
+
+| Historical run | Winner | Mean validation F1 | Mean held-out test F1 |
+|---|---|---:|---:|
+| Without skill | DenseNet121 | 0.902062 | 0.878772 |
+| Adaptive with skill | DenseNet121 | **0.932217** | **0.886990** |
+
+Test difference: **+0.822 percentage points**. Epochs, recipes, stopping and accounting
+differed; the conditional patient interval includes zero. A causal skill improvement
+or resource saving is not established.
+[Report](docs/benchmarks/2026-11-cheng/REPORT.en.md) ·
+[Metrics JSON](docs/benchmarks/2026-11-cheng/metrics.json) ·
+[Seed CSV](docs/benchmarks/2026-11-cheng/seed_metrics.csv).

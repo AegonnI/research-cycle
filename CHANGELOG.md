@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.1.0-rc.1 — 2026-11-10 — universal free-form research
+
+- Accept a user task in ordinary language; derive a working task without manual placeholders.
+- Generalize the core to reviews, analysis, simulations and experiments; methods, metrics and memory adapt to the question.
+- Usage-first bilingual READMEs; historical metrics moved to the end without numerical changes.
+- Move benchmark executor/setup and superseded documents out of current main, with a verified local archive; old tags/releases remain available.
+- Add a retrospective Russian technical specification dated10November, explicitly awaiting approval.
+- Preserve benchmark JSON/CSV/trial records byte-for-byte. No new experimental efficacy claim.
+
+
 ## v2.0.0-rc.2 — 2026-11-04 — adaptive pilot and public metrics
 
 - Adaptive target+wall route; quotas, separate compute caps and fixed reserves are optional.

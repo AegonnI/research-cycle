@@ -1,5 +1,9 @@
 # Hermes: native Goal and clean paired runs
 
+Use native-Goal notes only when that host/mode is relevant. The clean paired-run
+setup below is for an explicitly requested comparison; an ordinary single research
+task does not require two profiles or disabling otherwise authorized task memory.
+
 The November4 adaptive pilot exercised native Goal and an external study executor
 on Windows/WSL. See adaptive.md and the public benchmark report. A target+wall task
 does not imply fixed coverage/compute/attempt gates. Use the current study status

@@ -4,7 +4,9 @@
 
 Contract: allowed families/architectures, custom networks, pretrained weights, data,
 preprocessing, search algorithms, parameter ranges, resource ceilings and code-edit
-boundaries. Unspecified methods are not automatically permitted. Separate fixed
+boundaries. Respect explicit restrictions; routine method choices within the task
+can be stated as assumptions. Unspecified methods do not authorize new data access,
+paid services or environment changes. Separate fixed
 benchmark conditions from optimization variables. A manifest is inventory, not install permission.
 
 The ledger checks *declared* scientific fields through `method_scope`, for example:
