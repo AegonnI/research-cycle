@@ -49,8 +49,8 @@ timeouts require actual host support; Markdown does not create them.
 ## Documentation and contents
 
 - [Usage](docs/USAGE.md) and [capability limits](docs/KNOWN_LIMITATIONS.md).
-- [Technical specification, Russian](docs/TECHNICAL_SPECIFICATION.ru.md): dated
-  10 November 2026, reconstructed from the implemented MVP; approval status is explicit.
+- [Technical specification, Russian](docs/TECHNICAL_SPECIFICATION.ru.md): requirements for
+  skill development, with/without-skill experiments, iterative improvement and verification.
 - Skill and bilingual references in `skills/research-cycle/`.
 - Optional SQLite helper and model-search guidance for applicable tasks.
 - [Adaptation provenance and MIT notices](THIRD_PARTY_NOTICES.md).
